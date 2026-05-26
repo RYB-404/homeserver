@@ -1,0 +1,24 @@
+services:
+  dashboard:
+    build: .
+    image: eka-dashboard:latest
+    container_name: eka_dashboard
+    restart: unless-stopped
+    # Safe default: bind locally. Expose through VPN/reverse proxy if remote access is needed.
+    ports:
+      - "${DASHBOARD_BIND:-127.0.0.1}:${DASHBOARD_PORT:-8080}:5000"
+    volumes:
+      - ./data:/app/data # Persist configs/license
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in .env before starting the dashboard}
+      - HOST_PROC=/host/proc
+      - HOST_SYS=/host/sys
+      - HOST_ROOT=/host/root
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

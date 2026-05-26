@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health - Server Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Inter, sans-serif; background: #0d1117; color: #f0f6fc; min-height: 100vh; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+        .header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 1rem; }
+        .header h1 { font-size: 1.4rem; font-weight: 650; }
+        .btn { color: #f0f6fc; text-decoration: none; display: inline-flex; align-items: center; gap: .5rem; padding: .55rem .8rem; border: 1px solid rgba(255,255,255,.12); border-radius: 6px; background: #161b22; }
+        .summary { display: grid; grid-template-columns: 1.2fr .8fr; gap: 1rem; margin-bottom: 1rem; }
+        .panel { background: #161b22; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 1rem; }
+        .mode { display: flex; align-items: center; gap: .8rem; }
+        .mode-icon { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: rgba(120,255,214,.12); color: #78ffd6; }
+        .mode.host-control .mode-icon { background: rgba(255,209,102,.12); color: #ffd166; }
+        .mode-title { font-size: 1.1rem; font-weight: 650; }
+        .muted { color: #8b949e; font-size: .9rem; margin-top: .2rem; }
+        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+        .cap { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+        .cap-name { font-weight: 600; margin-bottom: .25rem; }
+        .pill { white-space: nowrap; font-size: .78rem; padding: .25rem .55rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); }
+        .pill.ok { color: #7ee787; border-color: rgba(126,231,135,.35); background: rgba(126,231,135,.08); }
+        .pill.missing { color: #ffa657; border-color: rgba(255,166,87,.35); background: rgba(255,166,87,.08); }
+        .hint { margin-top: 1rem; padding: .9rem 1rem; border-radius: 8px; background: rgba(88,166,255,.08); color: #c9d1d9; border: 1px solid rgba(88,166,255,.2); }
+        @media (max-width: 760px) { .summary, .grid { grid-template-columns: 1fr; } .header { align-items: flex-start; flex-direction: column; } }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Health Check</h1>
+                <div class="muted">Runtime capability status for this dashboard instance.</div>
+            </div>
+            <a class="btn" href="/dashboard"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+        </div>
+
+        <div class="summary">
+            <section class="panel mode" id="mode-panel">
+                <div class="mode-icon"><i class="fa-solid fa-shield-heart"></i></div>
+                <div>
+                    <div class="mode-title" id="mode-title">Checking...</div>
+                    <div class="muted" id="mode-detail">Loading runtime status.</div>
+                </div>
+            </section>
+            <section class="panel">
+                <div class="mode-title" id="summary-title">- / - available</div>
+                <div class="muted">Missing items are expected in Safe Mode on local Windows tests.</div>
+            </section>
+        </div>
+
+        <div class="grid" id="capabilities"></div>
+
+        <div class="header" style="margin-top: 1.2rem;">
+            <div>
+                <h1>Storage Plan</h1>
+                <div class="muted">Recommended folders for photos, media, websites, app configs, and backups.</div>
+            </div>
+        </div>
+
+        <div class="grid" id="storage-plan"></div>
+
+        <div class="hint">
+            Safe Mode is the default. Use <code>docker-compose.host-control.yml</code> only when you need root-level host features such as Docker management, full host files, WireGuard, or LXD.
+        </div>
+    </div>
+
+    <script>
+        function renderCapability(key, item) {
+            const div = document.createElement('section');
+            div.className = 'panel cap';
+            div.innerHTML = `
+                <div>
+                    <div class="cap-name">${item.name}</div>
+                    <div class="muted">${item.detail}</div>
+                </div>
+                <span class="pill ${item.available ? 'ok' : 'missing'}">${item.available ? 'Available' : 'Missing'}</span>
+            `;
+            return div;
+        }
+
+        function renderStoragePath(item) {
+            const div = document.createElement('section');
+            div.className = 'panel cap';
+            const disk = item.disk ? `${item.disk.percent}% used` : 'Disk unknown';
+            div.innerHTML = `
+                <div>
+                    <div class="cap-name">${item.name}</div>
+                    <div class="muted">${item.path}</div>
+                    <div class="muted">${item.purpose}</div>
+                </div>
+                <span class="pill ${item.exists ? 'ok' : 'missing'}">${item.exists ? disk : 'Create later'}</span>
+            `;
+            return div;
+        }
+
+        fetch('/api/health')
+            .then(r => r.json())
+            .then(data => {
+                const modePanel = document.getElementById('mode-panel');
+                const isHost = data.mode === 'host-control';
+                modePanel.classList.toggle('host-control', isHost);
+                document.getElementById('mode-title').textContent = isHost ? 'Host Control Mode' : 'Safe Mode';
+                document.getElementById('mode-detail').textContent = isHost
+                    ? 'Host-level controls are available. Keep this behind LAN/VPN.'
+                    : 'Host-level controls are not mounted. This is the safer default.';
+                document.getElementById('summary-title').textContent = `${data.summary.available} / ${data.summary.total} available`;
+
+                const list = document.getElementById('capabilities');
+                list.innerHTML = '';
+                Object.entries(data.capabilities).forEach(([key, item]) => list.appendChild(renderCapability(key, item)));
+            })
+            .catch(() => {
+                document.getElementById('mode-title').textContent = 'Health unavailable';
+                document.getElementById('mode-detail').textContent = 'The health API did not respond.';
+            });
+
+        fetch('/api/storage/plan')
+            .then(r => r.json())
+            .then(data => {
+                const list = document.getElementById('storage-plan');
+                list.innerHTML = '';
+                data.paths.forEach(item => list.appendChild(renderStoragePath(item)));
+            });
+    </script>
+</body>
+
+</html>

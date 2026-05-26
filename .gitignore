@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+venv/
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+data/*
+!data/
+!data/app_catalog.json
+__screenshots__/
+playwright-report/
+test-results/
+*.zip
+*.bak
+*.code-workspace
+app_server.py
+create_package.py
+verify_update_check.py
+
+# =========================
+# Security & Sensitive Data
+# =========================
+admin_id.txt
+orders_db.json
+security_config.json
+*.log
+_seller_tools/
+keygen.py
+admin_keygen_gui.py
+license_manager.py
+utils/license.py

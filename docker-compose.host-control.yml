@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    pid: host
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root
+      - /etc/wireguard:/etc/wireguard

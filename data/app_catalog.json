@@ -1,0 +1,159 @@
+[
+  {
+    "id": "caddy",
+    "name": "Caddy",
+    "description": "Reverse proxy with automatic HTTPS for dashboard, websites, Immich, and Jellyfin.",
+    "category": "Gateway",
+    "image": "caddy:2-alpine",
+    "icon": "/static/icon.svg",
+    "ports": [
+      { "host": 80, "container": 80, "protocol": "tcp" },
+      { "host": 443, "container": 443, "protocol": "tcp" }
+    ],
+    "volumes": [
+      { "bind": "/opt/homeserver/caddy/Caddyfile", "container": "/etc/caddy/Caddyfile", "description": "Caddyfile" },
+      { "bind": "/opt/homeserver/caddy/data", "container": "/data", "description": "TLS certificates" },
+      { "bind": "/opt/homeserver/caddy/config", "container": "/config", "description": "Caddy config" },
+      { "bind": "/opt/homeserver/www", "container": "/srv", "description": "Website files" }
+    ],
+    "env": []
+  },
+  {
+    "id": "nginx-proxy-manager",
+    "name": "Nginx Proxy Manager",
+    "description": "Web UI for reverse proxy hosts and Let's Encrypt certificates.",
+    "category": "Gateway",
+    "image": "jc21/nginx-proxy-manager:latest",
+    "icon": "https://nginxproxymanager.com/icon.png",
+    "ports": [
+      { "host": 80, "container": 80, "protocol": "tcp" },
+      { "host": 81, "container": 81, "protocol": "tcp" },
+      { "host": 443, "container": 443, "protocol": "tcp" }
+    ],
+    "volumes": [
+      { "bind": "/opt/homeserver/nginx-proxy-manager/data", "container": "/data", "description": "App data" },
+      { "bind": "/opt/homeserver/nginx-proxy-manager/letsencrypt", "container": "/etc/letsencrypt", "description": "TLS certificates" }
+    ],
+    "env": []
+  },
+  {
+    "id": "tailscale",
+    "name": "Tailscale",
+    "description": "Private remote access to your home server without exposing the dashboard publicly.",
+    "category": "Network",
+    "image": "tailscale/tailscale:latest",
+    "icon": "https://tailscale.com/favicon.ico",
+    "network_mode": "host",
+    "ports": [],
+    "volumes": [
+      { "bind": "/opt/homeserver/tailscale/state", "container": "/var/lib/tailscale", "description": "Tailscale state" },
+      { "bind": "/dev/net/tun", "container": "/dev/net/tun", "description": "TUN device" }
+    ],
+    "env": [
+      { "key": "TS_AUTHKEY", "value": "" },
+      { "key": "TS_STATE_DIR", "value": "/var/lib/tailscale" },
+      { "key": "TS_EXTRA_ARGS", "value": "--ssh" }
+    ]
+  },
+  {
+    "id": "uptime-kuma",
+    "name": "Uptime Kuma",
+    "description": "Service monitoring for dashboard, websites, Immich, Jellyfin, and external URLs.",
+    "category": "Monitoring",
+    "image": "louislam/uptime-kuma:1",
+    "icon": "https://uptime.kuma.pet/img/icon.svg",
+    "ports": [
+      { "host": 3001, "container": 3001, "protocol": "tcp" }
+    ],
+    "volumes": [
+      { "bind": "/opt/homeserver/uptime-kuma/data", "container": "/app/data", "description": "Monitor data" }
+    ],
+    "env": []
+  },
+  {
+    "id": "jellyfin",
+    "name": "Jellyfin",
+    "description": "Personal streaming server for movies, series, and music.",
+    "category": "Media",
+    "image": "jellyfin/jellyfin:latest",
+    "icon": "https://jellyfin.org/images/logo.svg",
+    "ports": [
+      { "host": 8096, "container": 8096, "protocol": "tcp" }
+    ],
+    "volumes": [
+      { "bind": "/opt/homeserver/jellyfin/config", "container": "/config", "description": "Jellyfin config" },
+      { "bind": "/opt/homeserver/jellyfin/cache", "container": "/cache", "description": "Jellyfin cache" },
+      { "bind": "/mnt/media", "container": "/media", "description": "Movie and series library" }
+    ],
+    "env": [
+      { "key": "TZ", "value": "Asia/Jakarta" }
+    ]
+  },
+  {
+    "id": "immich-server",
+    "name": "Immich Server",
+    "description": "Photo and video backup server. Requires Immich Postgres and Immich Redis templates.",
+    "category": "Photos",
+    "image": "ghcr.io/immich-app/immich-server:release",
+    "icon": "https://immich.app/img/immich-logo-stacked-light.svg",
+    "ports": [
+      { "host": 2283, "container": 2283, "protocol": "tcp" }
+    ],
+    "volumes": [
+      { "bind": "/mnt/photos/immich/upload", "container": "/usr/src/app/upload", "description": "Photo library uploads" },
+      { "bind": "/etc/localtime", "container": "/etc/localtime", "description": "Host local time" }
+    ],
+    "env": [
+      { "key": "DB_HOSTNAME", "value": "immich-postgres" },
+      { "key": "DB_USERNAME", "value": "postgres" },
+      { "key": "DB_PASSWORD", "value": "change-me" },
+      { "key": "DB_DATABASE_NAME", "value": "immich" },
+      { "key": "REDIS_HOSTNAME", "value": "immich-redis" },
+      { "key": "IMMICH_MACHINE_LEARNING_URL", "value": "http://immich-machine-learning:3003" }
+    ]
+  },
+  {
+    "id": "immich-postgres",
+    "name": "Immich Postgres",
+    "description": "Postgres database for Immich metadata.",
+    "category": "Photos",
+    "image": "tensorchord/pgvecto-rs:pg14-v0.2.0",
+    "icon": "https://www.postgresql.org/media/img/about/press/elephant.png",
+    "ports": [],
+    "volumes": [
+      { "bind": "/opt/homeserver/immich/postgres", "container": "/var/lib/postgresql/data", "description": "Immich database data" }
+    ],
+    "env": [
+      { "key": "POSTGRES_PASSWORD", "value": "change-me" },
+      { "key": "POSTGRES_USER", "value": "postgres" },
+      { "key": "POSTGRES_DB", "value": "immich" }
+    ]
+  },
+  {
+    "id": "immich-redis",
+    "name": "Immich Redis",
+    "description": "Redis cache and queue backend for Immich.",
+    "category": "Photos",
+    "image": "redis:7-alpine",
+    "icon": "https://redis.io/wp-content/uploads/2024/04/Logotype.svg",
+    "ports": [],
+    "volumes": [
+      { "bind": "/opt/homeserver/immich/redis", "container": "/data", "description": "Redis data" }
+    ],
+    "env": []
+  },
+  {
+    "id": "immich-machine-learning",
+    "name": "Immich Machine Learning",
+    "description": "Face recognition and smart search service for Immich.",
+    "category": "Photos",
+    "image": "ghcr.io/immich-app/immich-machine-learning:release",
+    "icon": "https://immich.app/img/immich-logo-stacked-light.svg",
+    "ports": [],
+    "volumes": [
+      { "bind": "/opt/homeserver/immich/model-cache", "container": "/cache", "description": "ML model cache" }
+    ],
+    "env": []
+  }
+]
+
