@@ -116,4 +116,4 @@ docker compose -f docker-compose.yml -f docker-compose.host-control.yml up -d --
 
 ## Catatan Lisensi
 
-Copyright 2026 Eka Harefa. Semua hak cipta dilindungi. Jika repo dibuat publik, tentukan lisensi resmi sebelum menerima kontribusi atau penggunaan ulang oleh pihak lain.
+Copyright 2026. Semua hak cipta dilindungi. Jika repo dibuat publik, tentukan lisensi resmi sebelum menerima kontribusi atau penggunaan ulang oleh pihak lain.
