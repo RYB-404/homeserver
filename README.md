@@ -1,4 +1,4 @@
-# Eka Dashboard
+# maeng Dashboard
 
 Dashboard pribadi untuk monitor dan kontrol homeserver berbasis Docker. Target utama proyek ini adalah laptop/mini PC/STB yang menjalankan Ubuntu Server atau Debian di jaringan pribadi.
 
